@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchWaitlist = async () => {
       try {
-        const res = await fetch('/api/waitlist');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/all`);
         const data = await res.json();
         setWaitlist(data);
       } catch (err) {
@@ -55,13 +55,13 @@ const Dashboard: React.FC = () => {
 
   const handleDelete = async (record: WaitlistRecord) => {
     if (confirm(`Delete ${record.fullName}?`)) {
-      await fetch(`/api/waitlist/${record.id}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL}/delete/${record.id}`, { method: 'DELETE' });
       setWaitlist((prev) => prev.filter((r) => r.id !== record.id));
     }
   };
 
   const handleSave = async (updated: WaitlistRecord) => {
-    await fetch(`/api/waitlist/${updated.id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/update/${updated.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
             setSearchTerm(e.target.value);
             setCurrentPage(1);
           }}
-          className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md"
+          className="w-full md:w-1/3 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-600"
         />
       </div>
 
