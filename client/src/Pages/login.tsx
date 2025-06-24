@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 
 interface FormData {
@@ -15,6 +15,10 @@ interface FormErrors {
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Get redirect path from location state (if coming from a protected route)
+  const from = location.state?.from?.pathname || '/dashboard'
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
@@ -75,17 +79,17 @@ const Login = () => {
       setIsSubmitting(true)
       try {
         // Make actual API call to your backend
-        const response = await axios.post('http://localhost:5000/api/admin/login', formData)
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/login`, formData)
         
         if (response.data.success) {
           // Store token in localStorage or secure cookie
           localStorage.setItem('adminToken', response.data.token)
           localStorage.setItem('adminUser', JSON.stringify(response.data.admin))
           
-          console.log('Login successful with:', formData)
+          // console.log('Login successful with:', formData)
           
-          // Redirect to dashboard
-          navigate('/dashboard')
+          // Redirect to the intended destination or dashboard
+          navigate(from)
         } else {
           setErrors({
             general: response.data.message || 'Login failed. Please try again.'

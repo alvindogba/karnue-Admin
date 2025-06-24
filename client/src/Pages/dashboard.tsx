@@ -18,7 +18,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchWaitlist = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/all`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/waitlist/admin/all`);
         const data = await res.json();
         setWaitlist(data);
       } catch (err) {
