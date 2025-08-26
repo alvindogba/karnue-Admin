@@ -1,311 +1,173 @@
-import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import axios from 'axios'
+// src/pages/AdminLogin.tsx
+import React, { useState } from "react";
 
-interface FormData {
-  email: string;
-  password: string;
-}
+type Props = {
+  onSubmit?: (payload: { email: string; secretKey: string }) => Promise<void> | void;
+  // If you have a reset route, pass it in; otherwise it stays as "#"
+  resetLinkHref?: string;
+  // Optional illustration URL (SVG/PNG). You can keep a local asset: /assets/admin-illustration.svg
+  illustrationSrc?: string;
+};
 
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
+export default function AdminLogin({
+  onSubmit,
+  resetLinkHref = "#",
+  illustrationSrc = "/assets/illustration.svg",
+}: Props) {
+  const [email, setEmail] = useState("");
+  const [secretKey, setSecretKey] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState<{ email?: boolean; secretKey?: boolean }>({});
+  const [error, setError] = useState<string | null>(null);
 
-const Login = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  
-  // Get redirect path from location state (if coming from a protected route)
-  const from = location.state?.from?.pathname || '/dashboard'
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    password: ''
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showResetForm, setShowResetForm] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
-  const [resetEmailSent, setResetEmailSent] = useState(false)
-  const [resetEmailError, setResetEmailError] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const emailError =
+    touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Enter a valid email" : "";
+  const secretError = touched.secretKey && !secretKey ? "Secret key is required" : "";
 
-  const validateForm = () => {
-    const newErrors: FormErrors = {}
-    
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = 'Email is required'
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = 'Invalid email address'
-    }
-    
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-    }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const validateResetEmail = () => {
-    if (!resetEmail) {
-      setResetEmailError('Email is required')
-      return false
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(resetEmail)) {
-      setResetEmailError('Invalid email address')
-      return false
-    }
-    setResetEmailError('')
-    return true
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value
-    })
-  }
+  const canSubmit = !emailError && !secretError && email && secretKey && !loading;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (validateForm()) {
-      setIsSubmitting(true)
-      try {
-        // Make actual API call to your backend
-        const response = await axios.post(`${import.meta.env.VITE_API_URL}/admin/login`, formData)
-        
-        if (response.data.success) {
-          // Store token in localStorage or secure cookie
-          localStorage.setItem('adminToken', response.data.token)
-          localStorage.setItem('adminUser', JSON.stringify(response.data.admin))
-          
-          // console.log('Login successful with:', formData)
-          
-          // Redirect to the intended destination or dashboard
-          navigate(from)
-        } else {
-          setErrors({
-            general: response.data.message || 'Login failed. Please try again.'
-          })
-        }
-      } catch (error: any) {
-        setErrors({
-          general: error.response?.data?.message || 'Invalid email or password. Please try again.'
-        })
-        console.error('Login error:', error)
-      } finally {
-        setIsSubmitting(false)
-      }
-    }
-  }
+    e.preventDefault();
+    setTouched({ email: true, secretKey: true });
+    setError(null);
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (validateResetEmail()) {
-      try {
-        // Make actual API call for password reset
-        await axios.post('http://localhost:5000/api/admin/reset-request', { email: resetEmail })
-        
-        setResetEmailSent(true)
-        console.log('Password reset email sent to:', resetEmail)
-      } catch (error: any) {
-        setResetEmailError(error.response?.data?.message || 'Failed to send reset email. Please try again.')
-        console.error('Reset password error:', error)
-      }
+    if (!canSubmit) return;
+
+    try {
+      setLoading(true);
+      await onSubmit?.({ email, secretKey });
+    } catch (err: any) {
+      setError(err?.message || "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {showResetForm ? 'Reset your password' : 'Sign in to your account'}
-          </h2>
-        </div>
-        
-        {!showResetForm ? (
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            {errors.general && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{errors.general}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">Email address</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
-                />
-                {errors.email && (
-                  <p className="mt-2 text-sm text-red-600">{errors.email}</p>
-                )}
-              </div>
-              <div className="relative">
-                <label htmlFor="password" className="sr-only">Password</label>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm pr-10"
-                  placeholder="Password"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5 text-gray-500">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5 text-gray-500">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-                {errors.password && (
-                  <p className="mt-2 text-sm text-red-600">{errors.password}</p>
-                )}
-              </div>
-            </div>
+    <div className="relative flex items-center min-h-screen w-full overflow-hidden bg-white">
+      {/* Corner blobs */}
+      <div className="pointer-events-none absolute -left-40 -top-40 h-90 w-90 rounded-full bg-[#0505CE]" />
+      <div className="pointer-events-none absolute -right-40 -bottom-40 h-90 w-90 rounded-full bg-[#6E66FF] opacity-70" />
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
+      {/* Center card */}
+      <div className="mx-auto flex max-w-7xl flex-col px-4 py-10 md:py-16">
 
-              <div className="text-sm">
-                <button 
-                  type="button"
-                  onClick={() => setShowResetForm(true)}
-                  className="font-medium text-indigo-600 hover:text-indigo-500"
-                >
-                  Forgot your password?
-                </button>
-              </div>
-            </div>
+        <div className="mx-auto w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2">
 
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
-              >
-                {isSubmitting ? (
-                  'Signing in...'
-                ) : (
-                  'Sign in'
-                )}
-              </button>
-            </div>
-            
-           
-          </form>
-        ) : (
-          <div className="mt-8 space-y-6">
-            {resetEmailSent ? (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-green-700">
-                      Password reset instructions have been sent to your email address.
-                    </p>
-                  </div>
+            {/* Left panel (dark) */}
+            <div className="relative flex items-center justify-center bg-[#0B0B0E] px-8 py-12 md:px-10 md:py-14">
+              <div className="w-full max-w-md text-white">
+                <div className="mb-8">
+                  <p className="text-2xl font-semibold tracking-wide">Karnue</p>
                 </div>
-                <div className="mt-4 text-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowResetForm(false)
-                      setResetEmailSent(false)
-                      setResetEmail('')
-                    }}
-                    className="font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    Back to login
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleResetPassword}>
-                <div>
-                  <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
-                    Email address
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="reset-email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      placeholder="your@email.com"
+                <h1 className="mb-8 text-4xl font-extrabold leading-tight md:text-5xl">
+                  Welcome back
+                </h1>
+
+                <div className="mt-6 flex w-full items-center justify-center">
+                  {illustrationSrc ? (
+                    // Replace with your actual art; this container keeps the proportions like the mock
+                    <img
+                      src='/assets/admin-illustration.svg'
+                      alt="Admin working at desk"
+                      className="h-64 w-auto select-none"
+                      draggable={false}
                     />
-                    {resetEmailError && (
-                      <p className="mt-2 text-sm text-red-600">{resetEmailError}</p>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="h-64 w-full rounded-xl bg-[#0F0F14] ring-1 ring-white/10" />
+                  )}
                 </div>
-                
-                <div className="mt-6 flex items-center justify-between space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowResetForm(false)}
-                    className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    Back to login
-                  </button>
-                  
+              </div>
+            </div>
+
+            {/* Right panel (form) */}
+            <div className="flex items-center justify-center bg-gray-50 px-6 py-10 md:px-10 md:py-14">
+              <form onSubmit={handleSubmit} className="w-full max-w-md">
+                <div className="mb-2">
+                  <h2 className="text-xl font-semibold text-gray-900">Admin Access Page</h2>
+                  <p className="mt-2 text-sm text-gray-600">
+                    To access this Dashboard please enter information needed below.
+                  </p>
+                </div>
+
+                <div className="mt-8 space-y-5">
+                  {/* Email */}
+                  <div>
+                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-800">
+                      Email*
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                      className={`w-full rounded-md border bg-white px-4 py-3 text-gray-900 outline-none transition focus:ring-4
+                        ${emailError ? "border-red-500 ring-red-100" : "border-gray-300 focus:border-[#0505CE] focus:ring-[#0505CE]/15"}`}
+                      placeholder="admin@example.com"
+                    />
+                    {emailError ? (
+                      <p className="mt-1 text-sm text-red-600">{emailError}</p>
+                    ) : null}
+                  </div>
+
+                  {/* Secret Key */}
+                  <div>
+                    <label
+                      htmlFor="secret"
+                      className="mb-2 block text-sm font-medium text-gray-800"
+                    >
+                      Secret Key*
+                    </label>
+                    <input
+                      id="secret"
+                      type="password"
+                      autoComplete="current-password"
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, secretKey: true }))}
+                      className={`w-full rounded-md border bg-white px-4 py-3 text-gray-900 outline-none transition focus:ring-4
+                        ${secretError ? "border-red-500 ring-red-100" : "border-gray-300 focus:border-[#0505CE] focus:ring-[#0505CE]/15"}`}
+                      placeholder="••••••••••"
+                    />
+                    {secretError ? (
+                      <p className="mt-1 text-sm text-red-600">{secretError}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="pt-1">
+                    <a
+                      href={resetLinkHref}
+                      className="text-sm font-medium text-[#0505CE] hover:underline"
+                    >
+                      Reset Secret key, if forgotten
+                    </a>
+                  </div>
+
+                  {error ? (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
+
                   <button
                     type="submit"
-                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    disabled={!canSubmit}
+                    className={`mt-2 w-full rounded-md px-4 py-3 text-center text-base font-semibold text-white transition
+                      ${canSubmit ? "bg-[#0505CE] hover:opacity-95 focus:ring-4 focus:ring-[#0505CE]/30" : "cursor-not-allowed bg-[#0505CE]/60"}`}
+                    aria-busy={loading}
                   >
-                    Send reset link
+                    {loading ? "Confirming..." : "Confirm"}
                   </button>
                 </div>
               </form>
-            )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
-  )
+  );
 }
-
-export default Login
