@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleSave = async (updated: WaitlistRecord) => {
-    await fetch(`${import.meta.env.VITE_API_URL}/update/${updated.id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/update/${updated.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),

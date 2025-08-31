@@ -3,7 +3,7 @@ import type { LoginRequest, LoginResponse, User } from '../interface';
 
 //base url
 // Use environment variable for base URL
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_API_URL;
 
 
 

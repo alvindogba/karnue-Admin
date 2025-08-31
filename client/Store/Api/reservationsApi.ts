@@ -11,7 +11,7 @@ import type {
 } from '../interface';
 
 // Use environment variable for base URL
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_API_URL;
 
 // Define the reservations API
 export const reservationsApi = createApi({

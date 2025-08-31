@@ -9,7 +9,7 @@ import type {
 } from '../interface';
 
 // Use environment variable for base URL
-const baseUrl = import.meta.env.VITE_BASE_URL;
+const baseUrl = import.meta.env.VITE_API_URL;
 
 // Define the riders API
 export const ridersApi = createApi({
