@@ -1,5 +1,11 @@
+/// <reference types="react" />
 // src/pages/AdminLogin.tsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {useLoginMutation} from "../../Store/Api/authApi";
+import { setCredentials } from "../../Store/Slice/authSlice";
+import type { AppDispatch } from "../../Store/interface";
+import { useDispatch } from "react-redux";
 
 type Props = {
   onSubmit?: (payload: { email: string; secretKey: string }) => Promise<void> | void;
@@ -10,15 +16,17 @@ type Props = {
 };
 
 export default function AdminLogin({
-  onSubmit,
   resetLinkHref = "#",
   illustrationSrc = "/assets/illustration.svg",
 }: Props) {
+  const [login, { isLoading }] = useLoginMutation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState<{ email?: boolean; secretKey?: boolean }>({});
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null)
 
   const emailError =
     touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "Enter a valid email" : "";
@@ -28,16 +36,17 @@ export default function AdminLogin({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ email: true, secretKey: true });
-    setError(null);
-
-    if (!canSubmit) return;
-
     try {
       setLoading(true);
-      await onSubmit?.({ email, secretKey });
-    } catch (err: any) {
-      setError(err?.message || "Unable to sign in. Please try again.");
+      const data = await login({ email, secretKey }).unwrap();
+      console.log('data: ', data)
+      //Saving the token to the state
+      dispatch(setCredentials({ user: data?.user, token: data?.token || "", refreshToken: data?.refreshToken || "" }));
+      
+      navigate("/admin-dashboard");
+    } catch (err) {
+       console.log('error: ', {error: err})
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -158,9 +167,9 @@ export default function AdminLogin({
                     disabled={!canSubmit}
                     className={`mt-2 w-full rounded-md px-4 py-3 text-center text-base font-semibold text-white transition
                       ${canSubmit ? "bg-[#0505CE] hover:opacity-95 focus:ring-4 focus:ring-[#0505CE]/30" : "cursor-not-allowed bg-[#0505CE]/60"}`}
-                    aria-busy={loading}
+                    aria-busy={isLoading}
                   >
-                    {loading ? "Confirming..." : "Confirm"}
+                    {isLoading ? "Confirming..." : "Confirm"}
                   </button>
                 </div>
               </form>
