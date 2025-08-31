@@ -58,7 +58,7 @@ export const reservationsApi = createApi({
     // Get single reservation by ID
     getReservationById: builder.query<Reservation, string>({
       query: (id) => `/reservations/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Reservation', id }],
+      providesTags: (_, __, id) => [{ type: 'Reservation', id }],
     }),
 
     // Get reservations statistics
@@ -84,7 +84,7 @@ export const reservationsApi = createApi({
         method: 'PATCH',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (_, __, { id }) => [
         { type: 'Reservation', id },
         { type: 'Reservation', id: 'LIST' },
         'ReservationsStats'
@@ -97,7 +97,7 @@ export const reservationsApi = createApi({
         url: `/reservations/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Reservation', id },
         { type: 'Reservation', id: 'LIST' },
         'ReservationsStats'
@@ -110,7 +110,7 @@ export const reservationsApi = createApi({
         url: `/reservations/${id}/cancel`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Reservation', id },
         { type: 'Reservation', id: 'LIST' },
         'ReservationsStats'
@@ -123,7 +123,7 @@ export const reservationsApi = createApi({
         url: `/reservations/${id}/confirm`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Reservation', id },
         { type: 'Reservation', id: 'LIST' },
         'ReservationsStats'
@@ -137,7 +137,7 @@ export const reservationsApi = createApi({
         method: 'PATCH',
         body: { driverId },
       }),
-      invalidatesTags: (result, error, { reservationId }) => [
+      invalidatesTags: (_, __, { reservationId }) => [
         { type: 'Reservation', id: reservationId },
         { type: 'Reservation', id: 'LIST' },
         'ReservationsStats'

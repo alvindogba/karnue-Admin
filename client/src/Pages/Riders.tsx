@@ -14,7 +14,7 @@ import {
   setStatusFilter,
   setCurrentPage,
   openModal,
-  closeModal
+  // closeModal - unused
 } from "../../Store/Slice/ridersSlice";
 
 /** Utility */
@@ -40,7 +40,7 @@ export default function Riders() {
     data: ridersData, 
     error: ridersError, 
     isLoading: ridersLoading,
-    refetch: refetchRiders
+    refetch: _
   } = useGetRidersQuery({
     page: currentPage,
     limit: itemsPerPage,

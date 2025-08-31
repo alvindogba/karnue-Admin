@@ -54,7 +54,7 @@ export const ridersApi = createApi({
     // Get single rider by ID
     getRiderById: builder.query<Rider, number>({
       query: (id) => `/riders/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Rider', id }],
+      providesTags: (_, __, id) => [{ type: 'Rider', id }],
     }),
 
     // Get riders statistics
@@ -80,7 +80,7 @@ export const ridersApi = createApi({
         method: 'PATCH',
         body: patch,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (_, __, { id }) => [
         { type: 'Rider', id },
         { type: 'Rider', id: 'LIST' },
         'RidersStats'
@@ -93,7 +93,7 @@ export const ridersApi = createApi({
         url: `/riders/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Rider', id },
         { type: 'Rider', id: 'LIST' },
         'RidersStats'
@@ -106,7 +106,7 @@ export const ridersApi = createApi({
         url: `/riders/${id}/suspend`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Rider', id },
         { type: 'Rider', id: 'LIST' },
         'RidersStats'
@@ -119,7 +119,7 @@ export const ridersApi = createApi({
         url: `/riders/${id}/activate`,
         method: 'PATCH',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_, __, id) => [
         { type: 'Rider', id },
         { type: 'Rider', id: 'LIST' },
         'RidersStats'
