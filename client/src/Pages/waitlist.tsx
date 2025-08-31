@@ -21,7 +21,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchWaitlist = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/waitlist/admin/all`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/waitlist/admin/all`);
         const data = await res.json();
         setWaitlist(data);
       } catch (err) {
@@ -58,13 +58,13 @@ const Dashboard: React.FC = () => {
 
   const handleDelete = async (record: WaitlistRecord) => {
     if (confirm(`Delete ${record.fullName}?`)) {
-      await fetch(`${import.meta.env.VITE_API_URL}/delete/${record.id}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL}/api/waitlist/admin/delete/${record.id}`, { method: 'DELETE' });
       setWaitlist((prev) => prev.filter((r) => r.id !== record.id));
     }
   };
 
   const handleSave = async (updated: WaitlistRecord) => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/update/${updated.id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/waitlist/admin/update/${updated.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
