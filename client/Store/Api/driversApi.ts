@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { RootState } from '../store';
-import type { AdminDriver, GetAdminDriversRequest, GetAdminDriversResponse } from '../interface';
+
+import type { GetAdminDriversRequest, GetAdminDriversResponse } from '../interface';
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
@@ -17,7 +17,10 @@ export const driversApi = createApi({
   }),
   endpoints: (builder) => ({
     getDrivers: builder.query<GetAdminDriversResponse, GetAdminDriversRequest | void>({
-      query: (params) => ({ url: '/drivers', params }),
+      query: (params) => ({
+        url: '/drivers',
+        params: params || undefined,
+      }),
       providesTags: ['Drivers'],
     }),
     startBackgroundCheck: builder.mutation<{ success: boolean; reference: string; status: string }, number>({

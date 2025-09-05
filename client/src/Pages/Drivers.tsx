@@ -1,4 +1,4 @@
-import { Car, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, XCircle, ShieldAlert, Play } from "lucide-react";
+import { Car, Search, Filter, Plus, Eye, CheckCircle, XCircle, ShieldAlert, Play } from "lucide-react";
 import { useState } from 'react';
 import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
 import type { AdminDriver } from '../../Store/interface';

@@ -1,7 +1,6 @@
 import {
   Car,
   RefreshCw,
-  Receipt,
   ShieldCheck,
   BadgeCheck,
   Users,
