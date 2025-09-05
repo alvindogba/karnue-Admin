@@ -194,3 +194,43 @@ export interface Driver {
   distance: string;
   eta: string;
 }
+
+// Admin Driver object from server
+export interface AdminDriver {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleYear?: string;
+  licensePlate?: string;
+  payoutMethod?: string;
+  accountStatus: 'draft' | 'awaiting_verification' | 'active' | 'rejected';
+  backgroundCheckStatus: 'not_started' | 'in_progress' | 'clear' | 'flagged' | 'failed';
+  submittedAt?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  createdAt?: string;
+}
+
+export interface GetAdminDriversRequest {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;        // maps to accountStatus
+  bgStatus?: string;      // maps to backgroundCheckStatus
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface GetAdminDriversResponse {
+  success: boolean;
+  data: AdminDriver[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}

@@ -1,4 +1,7 @@
-import { Car, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Car, Search, Filter, Plus, Eye, Edit, Trash2, CheckCircle, XCircle, ShieldAlert, Play } from "lucide-react";
+import { useState } from 'react';
+import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
+import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
 function classNames(...c: (string | false | undefined)[]) {
@@ -8,67 +11,42 @@ function classNames(...c: (string | false | undefined)[]) {
 /** Accent color - Karnue brand */
 const ACCENT = "#0505CE";
 
-/** Sample driver data */
-const drivers = [
-  {
-    id: 1,
-    name: "Michael Johnson",
-    email: "michael.j@email.com",
-    phone: "+1 234 567 8900",
-    licenseNumber: "DL123456789",
-    vehicleModel: "Toyota Camry 2020",
-    plateNumber: "ABC-1234",
-    totalRides: 234,
-    rating: 4.8,
-    status: "Active",
-    joinDate: "2024-01-10",
-    earnings: "$2,450",
-  },
-  {
-    id: 2,
-    name: "David Wilson",
-    email: "david.wilson@email.com",
-    phone: "+1 234 567 8901",
-    licenseNumber: "DL987654321",
-    vehicleModel: "Honda Accord 2021",
-    plateNumber: "XYZ-5678",
-    totalRides: 189,
-    rating: 4.6,
-    status: "Active",
-    joinDate: "2024-02-15",
-    earnings: "$1,890",
-  },
-  {
-    id: 3,
-    name: "Robert Brown",
-    email: "robert.brown@email.com",
-    phone: "+1 234 567 8902",
-    licenseNumber: "DL456789123",
-    vehicleModel: "Nissan Altima 2019",
-    plateNumber: "DEF-9012",
-    totalRides: 67,
-    rating: 4.3,
-    status: "Pending",
-    joinDate: "2024-03-20",
-    earnings: "$670",
-  },
-  {
-    id: 4,
-    name: "James Davis",
-    email: "james.davis@email.com",
-    phone: "+1 234 567 8903",
-    licenseNumber: "DL789123456",
-    vehicleModel: "Hyundai Elantra 2022",
-    plateNumber: "GHI-3456",
-    totalRides: 312,
-    rating: 4.9,
-    status: "Active",
-    joinDate: "2023-11-05",
-    earnings: "$3,120",
-  },
-];
+function statusBadge(status: AdminDriver['accountStatus']) {
+  switch (status) {
+    case 'awaiting_verification':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'rejected':
+      return 'bg-red-100 text-red-800';
+    case 'draft':
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
 
 export default function Drivers() {
+  const [search, setSearch] = useState('');
+  const { data, isLoading, refetch } = useGetDriversQuery({ status: 'awaiting_verification', search, limit: 50, sortBy: 'submittedAt', sortOrder: 'DESC' });
+  const drivers = (data?.data || []) as AdminDriver[];
+  const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
+  const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
+  const [rejectDriver, { isLoading: rejecting }] = useRejectDriverMutation();
+
+  const handleStartCheck = async (id: number) => {
+    await startBgCheck(id).unwrap();
+    await refetch();
+  };
+  const handleApprove = async (id: number) => {
+    await approveDriver(id).unwrap();
+    await refetch();
+  };
+  const handleReject = async (id: number) => {
+    const reason = window.prompt('Reason for rejection (optional)') || undefined;
+    await rejectDriver({ id, reason }).unwrap();
+    await refetch();
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -102,6 +80,9 @@ export default function Drivers() {
               placeholder="Search drivers by name, license, or vehicle..."
               className="w-full rounded-md border border-gray-200 pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1"
               style={{ '--tw-ring-color': ACCENT } as React.CSSProperties}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') refetch(); }}
               onFocus={(e) => {
                 e.target.style.borderColor = ACCENT;
               }}
@@ -189,16 +170,14 @@ export default function Drivers() {
       {/* Drivers Table */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-[#EFF5FF]">
-          <h3 className="text-lg font-semibold text-gray-800">All Drivers</h3>
+          <h3 className="text-lg font-semibold text-gray-800">Driver Registrations</h3>
         </div>
         
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Driver
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contact
                 </th>
@@ -206,13 +185,10 @@ export default function Drivers() {
                   Vehicle
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Performance
+                  Background Check
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Earnings
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -220,18 +196,22 @@ export default function Drivers() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {drivers.map((driver) => (
+              {isLoading ? (
+                <tr><td className="px-6 py-4" colSpan={6}>Loading…</td></tr>
+              ) : drivers.length === 0 ? (
+                <tr><td className="px-6 py-4" colSpan={6}>No registrations found</td></tr>
+              ) : drivers.map((driver) => (
                 <tr key={driver.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                         <span className="text-sm font-medium text-gray-600">
-                          {driver.name.split(' ').map(n => n[0]).join('')}
+                          {(driver.fullName || 'N A').split(' ').map(n => n[0]).join('')}
                         </span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{driver.name}</div>
-                        <div className="text-sm text-gray-500">ID: {driver.id}</div>
+                        <div className="text-sm font-medium text-gray-900">{driver.fullName}</div>
+                        <div className="text-xs text-gray-500">Submitted: {driver.submittedAt ? new Date(driver.submittedAt).toLocaleString() : '-'}</div>
                       </div>
                     </div>
                   </td>
@@ -240,41 +220,36 @@ export default function Drivers() {
                     <div className="text-sm text-gray-500">{driver.phone}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{driver.vehicleModel}</div>
-                    <div className="text-sm text-gray-500">{driver.plateNumber}</div>
+                    <div className="text-sm text-gray-900">{driver.vehicleYear || '-'} {driver.vehicleMake || ''} {driver.vehicleModel || ''}</div>
+                    <div className="text-sm text-gray-500">Plate: {driver.licensePlate || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{driver.totalRides} rides</div>
-                    <div className="flex items-center">
-                      <span className="text-yellow-400">★</span>
-                      <span className="ml-1 text-sm text-gray-900">{driver.rating}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-900">
+                      <ShieldAlert className="h-4 w-4" />
+                      {driver.backgroundCheckStatus.replace('_', ' ')}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={classNames(
-                      "inline-flex px-2 py-1 text-xs font-semibold rounded-full",
-                      driver.status === "Active" 
-                        ? "bg-green-100 text-green-800"
-                        : driver.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    )}>
-                      {driver.status}
+                    <span className={classNames("inline-flex px-2 py-1 text-xs font-semibold rounded-full", statusBadge(driver.accountStatus))}>
+                      {driver.accountStatus}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {driver.earnings}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
-                      <button className="text-blue-600 hover:text-blue-900">
+                      <button className="text-blue-600 hover:text-blue-900" title="View Details">
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900">
-                        <Edit className="h-4 w-4" />
+                      <button className="text-indigo-600 hover:text-indigo-900 inline-flex items-center gap-1" onClick={() => handleStartCheck(driver.id)} title="Start Background Check">
+                        <Play className="h-4 w-4" />
+                        {starting ? '...' : 'Check'}
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
-                        <Trash2 className="h-4 w-4" />
+                      <button className="text-green-600 hover:text-green-900 inline-flex items-center gap-1" onClick={() => handleApprove(driver.id)} title="Approve">
+                        <CheckCircle className="h-4 w-4" />
+                        {approving ? '...' : 'Approve'}
+                      </button>
+                      <button className="text-red-600 hover:text-red-900 inline-flex items-center gap-1" onClick={() => handleReject(driver.id)} title="Reject">
+                        <XCircle className="h-4 w-4" />
+                        {rejecting ? '...' : 'Reject'}
                       </button>
                     </div>
                   </td>

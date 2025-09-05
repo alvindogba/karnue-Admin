@@ -6,7 +6,14 @@ import {
   BadgeCheck,
   Users,
   CreditCard,
+  ShieldAlert,
+  Play,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
+import { Link } from 'react-router-dom';
+import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
+import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
 function classNames(...c: (string | false | undefined)[]) {
@@ -17,17 +24,21 @@ function classNames(...c: (string | false | undefined)[]) {
 const ACCENT = "#0505CE";
 
 
-/** Stat cards (top row) */
-const stats = [
-  { icon: <Car className="h-5 w-5" />, label: "Total Bookings Today", value: "1,867" },
-  { icon: <BadgeCheck className="h-5 w-5" />, label: "Active Rides", value: "89" },
-  { icon: <Receipt className="h-5 w-5" />, label: "Pending Requests", value: "34" },
-  { icon: <CreditCard className="h-5 w-5" />, label: "Total Revenue", value: "$1,867" },
-  { icon: <ShieldCheck className="h-5 w-5" />, label: "Driver Payouts", value: "$9,867" },
-  { icon: <Users className="h-5 w-5" />, label: "Active Drivers Today", value: "50/100" },
-  { icon: <Users className="h-5 w-5" />, label: "Total Bookings Today", value: "234" },
-  { icon: <Car className="h-5 w-5" />, label: "Issue Raised", value: "23" },
-];
+/** Stat cards (partly dynamic) */
+function useDashboardStats() {
+  const { data: pendingDriversResp } = useGetDriversQuery({ status: 'awaiting_verification', limit: 1 });
+  const pendingDrivers = pendingDriversResp?.pagination?.total ?? pendingDriversResp?.data?.length ?? 0;
+  return [
+    { icon: <Car className="h-5 w-5" />, label: "Total Bookings Today", value: "1,867" },
+    { icon: <BadgeCheck className="h-5 w-5" />, label: "Active Rides", value: "89" },
+    { icon: <ShieldAlert className="h-5 w-5" />, label: "Pending Driver Registrations", value: String(pendingDrivers) },
+    { icon: <CreditCard className="h-5 w-5" />, label: "Total Revenue", value: "$1,867" },
+    { icon: <ShieldCheck className="h-5 w-5" />, label: "Driver Payouts", value: "$9,867" },
+    { icon: <Users className="h-5 w-5" />, label: "Active Drivers Today", value: "50/100" },
+    { icon: <Users className="h-5 w-5" />, label: "Total Bookings Today", value: "234" },
+    { icon: <Car className="h-5 w-5" />, label: "Issue Raised", value: "23" },
+  ];
+}
 
 /** Quick actions */
 const actions = [
@@ -38,6 +49,18 @@ const actions = [
 ];
 
 export default function AdminDashboard() {
+  // Pending driver registrations preview
+  const { data: pendingData, isLoading: loadingPending, refetch: refetchPending } = useGetDriversQuery({ status: 'awaiting_verification', limit: 5, sortBy: 'submittedAt', sortOrder: 'DESC' });
+  const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
+  const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
+  const [rejectDriver, { isLoading: rejecting }] = useRejectDriverMutation();
+  const pendingDrivers = (pendingData?.data || []) as AdminDriver[];
+  const stats = useDashboardStats();
+
+  const handleStartCheck = async (id: number) => { await startBgCheck(id).unwrap(); await refetchPending(); };
+  const handleApprove = async (id: number) => { await approveDriver(id).unwrap(); await refetchPending(); };
+  const handleReject = async (id: number) => { const reason = window.prompt('Reason for rejection (optional)') || undefined; await rejectDriver({ id, reason }).unwrap(); await refetchPending(); };
+
   return (
     <>
       {/* Page Header */}
@@ -110,6 +133,77 @@ export default function AdminDashboard() {
               {a}
             </button>
           ))}
+        </div>
+      </section>
+
+      {/* Pending Driver Registrations */}
+      <section className="mt-8 overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-[#EFF5FF] px-5 py-3">
+          <div className="text-sm font-semibold text-gray-800">Pending Driver Registrations</div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => refetchPending()} className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs hover:bg-gray-50">
+              <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            </button>
+            <Link to="/drivers" className="text-xs font-medium text-[--accent]" style={{ ["--accent" as any]: ACCENT } as React.CSSProperties}>
+              View All
+            </Link>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BG Check</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loadingPending ? (
+                <tr><td className="px-6 py-4" colSpan={6}>Loading…</td></tr>
+              ) : pendingDrivers.length === 0 ? (
+                <tr><td className="px-6 py-4" colSpan={6}>No pending registrations</td></tr>
+              ) : pendingDrivers.map((d) => (
+                <tr key={d.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-3">
+                    <div className="text-sm font-medium text-gray-900">{d.fullName}</div>
+                    <div className="text-xs text-gray-500">ID: {d.id}</div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="text-sm text-gray-900">{d.email}</div>
+                    <div className="text-xs text-gray-500">{d.phone}</div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="text-sm text-gray-900">{d.vehicleYear || '-'} {d.vehicleMake || ''} {d.vehicleModel || ''}</div>
+                    <div className="text-xs text-gray-500">Plate: {d.licensePlate || '-'}</div>
+                  </td>
+                  <td className="px-6 py-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-900">
+                      <ShieldAlert className="h-4 w-4" /> {d.backgroundCheckStatus?.replace('_', ' ') || 'not_started'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-3 text-sm text-gray-900">{d.submittedAt ? new Date(d.submittedAt).toLocaleString() : '-'}</td>
+                  <td className="px-6 py-3 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      <button className="text-indigo-600 hover:text-indigo-900 inline-flex items-center gap-1" title="Start Background Check" onClick={() => handleStartCheck(d.id)}>
+                        <Play className="h-4 w-4" /> {starting ? '...' : 'Check'}
+                      </button>
+                      <button className="text-green-600 hover:text-green-900 inline-flex items-center gap-1" title="Approve" onClick={() => handleApprove(d.id)}>
+                        <CheckCircle className="h-4 w-4" /> {approving ? '...' : 'Approve'}
+                      </button>
+                      <button className="text-red-600 hover:text-red-900 inline-flex items-center gap-1" title="Reject" onClick={() => handleReject(d.id)}>
+                        <XCircle className="h-4 w-4" /> {rejecting ? '...' : 'Reject'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 

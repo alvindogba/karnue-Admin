@@ -11,6 +11,7 @@ import reservationsReducer from './Slice/reservationsSlice';
 import { authApi } from './Api/authApi';
 import { ridersApi } from './Api/ridersApi';
 import { reservationsApi } from './Api/reservationsApi';
+import { driversApi } from './Api/driversApi';
 
 // Configure persist
 import storage from 'redux-persist/lib/storage';
@@ -19,7 +20,7 @@ const persistConfig = {
   key: 'karnue_admin',
   storage,
   whitelist: ['auth', 'riders', 'reservations'],
-  blacklist: [authApi.reducerPath, ridersApi.reducerPath, reservationsApi.reducerPath],
+  blacklist: [authApi.reducerPath, ridersApi.reducerPath, reservationsApi.reducerPath, driversApi.reducerPath],
 };
 
 // Combine reducers
@@ -30,6 +31,7 @@ const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
   [ridersApi.reducerPath]: ridersApi.reducer,
   [reservationsApi.reducerPath]: reservationsApi.reducer,
+  [driversApi.reducerPath]: driversApi.reducer,
 });
 
 // Create persisted reducer
@@ -41,7 +43,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(authApi.middleware, ridersApi.middleware, reservationsApi.middleware),
+    }).concat(authApi.middleware, ridersApi.middleware, reservationsApi.middleware, driversApi.middleware),
 });
 
 // Enable refetchOnFocus and other RTK Query features
