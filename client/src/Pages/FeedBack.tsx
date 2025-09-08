@@ -13,7 +13,7 @@ export default function FeedBack() {
   console.log('Loading:', isLoading);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+//   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const filteredFeedback = feedback.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
