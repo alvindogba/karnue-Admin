@@ -234,3 +234,23 @@ export interface GetAdminDriversResponse {
     total: number;
   };
 }
+
+//######################### Define types for feedback #########################
+export interface Feedback {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface GetFeedbacksResponse {
+  success: boolean;
+  data: Feedback[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}

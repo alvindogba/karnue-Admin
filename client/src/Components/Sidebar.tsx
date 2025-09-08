@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   Calendar,
+  MessageSquare, // 🔥 import feedback icon
 } from "lucide-react";
 
 /** Utility */
@@ -29,8 +30,8 @@ const sidebar: NavItem[] = [
   { icon: <BarChart3 className="h-5 w-5" />, label: "Report", path: "/reports" },
   { icon: <Car className="h-5 w-5" />, label: "Rides", path: "/rides" },
   { icon: <Users className="h-5 w-5" />, label: "Waitlist", path: "/waitlist" },
+  { icon: <MessageSquare className="h-5 w-5" />, label: "Feedback", path: "/feedback" }, // ✅ new
   { icon: <Settings className="h-5 w-5" />, label: "Settings", path: "/settings" },
-
 ];
 
 export default function Sidebar() {

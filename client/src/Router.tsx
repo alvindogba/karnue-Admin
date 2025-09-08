@@ -9,6 +9,7 @@ import Payments from './Pages/Payments';
 import Reports from './Pages/Reports';
 import Rides from './Pages/Rides';
 import Settings from './Pages/Settings';
+import FeedBack from './Pages/FeedBack';
 import AdminLayout from './Components/AdminLayout';
 import Waitlist from './Pages/waitlist';
 
@@ -27,6 +28,7 @@ const AppRouter = () => {
       <Route path="/rides" element={<AdminLayout><Rides /></AdminLayout>} />
       <Route path="/settings" element={<AdminLayout><Settings /></AdminLayout>} />
       <Route path="/waitlist" element={<AdminLayout><Waitlist /></AdminLayout>} />
+      <Route path="/feedback" element={<AdminLayout><FeedBack /></AdminLayout>} />
     </Routes>
   );
 };
