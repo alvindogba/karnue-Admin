@@ -71,7 +71,7 @@ export default function FeedBack() {
 
     const filtered = term
       ? feedback.filter((item) => {
-          const name = (item.name ?? '').toLowerCase();
+          const name = (item.fullName ?? '').toLowerCase();
           const email = (item.email ?? '').toLowerCase();
           const message = (item.message ?? '').toLowerCase();
           return name.includes(term) || email.includes(term) || message.includes(term);
@@ -216,11 +216,11 @@ export default function FeedBack() {
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                         <span className="text-sm font-medium text-blue-600">
-                          {getInitials(item.name)}
+                          {getInitials(item.fullName)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{item.name || 'Unnamed'}</h3>
+                        <h3 className="font-semibold text-gray-900">{item.fullName || 'Unnamed'}</h3>
                         <p className="text-sm text-gray-500">{item.email || 'No email'}</p>
                       </div>
                     </div>

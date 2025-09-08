@@ -238,7 +238,7 @@ export interface GetAdminDriversResponse {
 //######################### Define types for feedback #########################
 export interface Feedback {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
   message: string;
   createdAt: string;
