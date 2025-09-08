@@ -1,36 +1,100 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MessageSquare, Filter, Search, Eye, Trash2 } from 'lucide-react';
 import { useGetAllFeedbacksQuery } from '../../Store/Api/feedBackApi';
 import type { Feedback } from '../../Store/interface';
 
+type SortOrder = 'newest' | 'oldest';
+
 export default function FeedBack() {
   const { data: feedbackResponse, isLoading, error } = useGetAllFeedbacksQuery();
-  const feedback: Feedback[] = feedbackResponse?.data || [];
+  const feedback: Feedback[] = Array.isArray(feedbackResponse?.data) ? feedbackResponse!.data : [];
 
-  // Debug logging
-  console.log('API Response:', feedbackResponse);
-  console.log('Error:', error);
-  console.log('Loading:', isLoading);
-  
   const [searchTerm, setSearchTerm] = useState('');
-//   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
 
-  const filteredFeedback = feedback.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.message.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  const safeDate = (value: unknown) => {
+    const d = new Date(String(value ?? ''));
+    return isNaN(d.getTime()) ? null : d;
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const d = safeDate(dateString);
+    if (!d) return '—';
+    return d.toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
+  };
+
+  const getInitials = (fullName?: string) => {
+    if (!fullName) return 'NA';
+    return fullName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((n) => n[0]?.toUpperCase() ?? '')
+      .join('') || 'NA';
+  };
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const month = now.getMonth();
+    const year = now.getFullYear();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+
+    let thisMonth = 0;
+    let last7 = 0;
+    const uniqueEmails = new Set<string>();
+
+    for (const f of feedback) {
+      if (f?.email) uniqueEmails.add(f.email);
+      const d = safeDate((f as any)?.createdAt);
+      if (!d) continue;
+      if (d.getMonth() === month && d.getFullYear() === year) thisMonth++;
+      if (d >= weekAgo) last7++;
+    }
+
+    return {
+      total: feedback.length,
+      thisMonth,
+      last7,
+      uniqueUsers: uniqueEmails.size,
+    };
+  }, [feedback]);
+
+  const filteredAndSorted = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    const filtered = term
+      ? feedback.filter((item) => {
+          const name = (item.name ?? '').toLowerCase();
+          const email = (item.email ?? '').toLowerCase();
+          const message = (item.message ?? '').toLowerCase();
+          return name.includes(term) || email.includes(term) || message.includes(term);
+        })
+      : feedback;
+
+    const sorted = [...filtered].sort((a, b) => {
+      const da = safeDate((a as any)?.createdAt)?.getTime() ?? 0;
+      const db = safeDate((b as any)?.createdAt)?.getTime() ?? 0;
+      return sortOrder === 'newest' ? db - da : da - db;
+    });
+
+    return sorted;
+  }, [feedback, searchTerm, sortOrder]);
+
+  const onView = (item: Feedback) => {
+    // TODO: open a modal or route to details page
+    console.log('View feedback', item.id);
+  };
+
+  const onDelete = (item: Feedback) => {
+    // TODO: wire to a delete mutation with a confirm dialog
+    console.log('Delete feedback', item.id);
   };
 
   return (
@@ -43,7 +107,7 @@ export default function FeedBack() {
         </div>
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-gray-400" />
-          <span className="text-sm text-gray-600">{feedback.length} Total Feedback</span>
+          <span className="text-sm text-gray-600">{stats.total} Total Feedback</span>
         </div>
       </div>
 
@@ -53,9 +117,7 @@ export default function FeedBack() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Feedback</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {feedback.length}
-              </p>
+              <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
             </div>
             <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <MessageSquare className="h-5 w-5 text-blue-600" />
@@ -67,14 +129,7 @@ export default function FeedBack() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">This Month</p>
-              <p className="text-2xl font-bold text-green-600">
-                {feedback.filter(f => {
-                  const feedbackDate = new Date(f.createdAt);
-                  const currentDate = new Date();
-                  return feedbackDate.getMonth() === currentDate.getMonth() && 
-                         feedbackDate.getFullYear() === currentDate.getFullYear();
-                }).length}
-              </p>
+              <p className="text-2xl font-bold text-green-600">{stats.thisMonth}</p>
             </div>
             <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
               <Filter className="h-5 w-5 text-green-600" />
@@ -86,14 +141,7 @@ export default function FeedBack() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Recent (7 days)</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {feedback.filter(f => {
-                  const feedbackDate = new Date(f.createdAt);
-                  const weekAgo = new Date();
-                  weekAgo.setDate(weekAgo.getDate() - 7);
-                  return feedbackDate >= weekAgo;
-                }).length}
-              </p>
+              <p className="text-2xl font-bold text-purple-600">{stats.last7}</p>
             </div>
             <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Eye className="h-5 w-5 text-purple-600" />
@@ -105,9 +153,7 @@ export default function FeedBack() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Unique Users</p>
-              <p className="text-2xl font-bold text-orange-600">
-                {new Set(feedback.map(f => f.email)).size}
-              </p>
+              <p className="text-2xl font-bold text-orange-600">{stats.uniqueUsers}</p>
             </div>
             <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
               <MessageSquare className="h-5 w-5 text-orange-600" />
@@ -121,7 +167,7 @@ export default function FeedBack() {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search feedback..."
@@ -131,9 +177,12 @@ export default function FeedBack() {
               />
             </div>
           </div>
-          
-          <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option value="">Sort by Date</option>
+
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
           </select>
@@ -144,15 +193,15 @@ export default function FeedBack() {
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
             <p className="text-gray-500">Loading feedback...</p>
           </div>
         ) : error ? (
           <div className="p-8 text-center">
             <MessageSquare className="h-12 w-12 text-red-300 mx-auto mb-4" />
-            <p className="text-red-500">Error loading feedback:</p>
+            <p className="text-red-500 font-medium">Error loading feedback</p>
             <p className="text-sm text-gray-600 mt-2">
-              {error && 'data' in error ? JSON.stringify(error.data) : 'Network or API error'}
+              {'data' in (error as any) ? JSON.stringify((error as any).data) : 'Network or API error'}
             </p>
             <p className="text-xs text-gray-500 mt-2">
               API URL: {import.meta.env.VITE_API_URL || 'Not set'}
@@ -160,44 +209,54 @@ export default function FeedBack() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {filteredFeedback.map((item) => (
+            {filteredAndSorted.map((item) => (
               <div key={item.id} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                         <span className="text-sm font-medium text-blue-600">
-                          {item.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {getInitials(item.name)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                        <p className="text-sm text-gray-500">{item.email}</p>
+                        <h3 className="font-semibold text-gray-900">{item.name || 'Unnamed'}</h3>
+                        <p className="text-sm text-gray-500">{item.email || 'No email'}</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-sm text-gray-600">{formatDate(item.createdAt)}</span>
+                      <span className="text-sm text-gray-600">{formatDate((item as any).createdAt)}</span>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-gray-700 text-sm leading-relaxed">{item.message}</p>
+                      <p className="text-gray-700 text-sm leading-relaxed">{item.message || '—'}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 ml-4">
-                    <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
+                    <button
+                      onClick={() => onView(item)}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                      aria-label="View"
+                      title="View"
+                    >
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                    <button
+                      onClick={() => onDelete(item)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                      aria-label="Delete"
+                      title="Delete"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
               </div>
             ))}
-            
-            {filteredFeedback.length === 0 && !isLoading && (
+
+            {filteredAndSorted.length === 0 && (
               <div className="p-8 text-center">
                 <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">No feedback found matching your criteria.</p>
