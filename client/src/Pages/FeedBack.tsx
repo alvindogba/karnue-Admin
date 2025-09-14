@@ -1,16 +1,23 @@
 import { useMemo, useState } from 'react';
-import { MessageSquare, Filter, Search, Eye, Trash2 } from 'lucide-react';
-import { useGetAllFeedbacksQuery } from '../../Store/Api/feedBackApi';
+import { MessageSquare, Filter, Search, Eye, Trash2, MessageCircle, CheckCircle } from 'lucide-react';
+import { useGetAllFeedbacksQuery, useReplyToFeedbackMutation } from '../../Store/Api/feedBackApi';
 import type { Feedback } from '../../Store/interface';
+import ReplyModal from '../Components/ReplyModal';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../Store/store';
 
 type SortOrder = 'newest' | 'oldest';
 
 export default function FeedBack() {
-  const { data: feedbackResponse, isLoading, error } = useGetAllFeedbacksQuery();
+  const { data: feedbackResponse, isLoading, error, refetch } = useGetAllFeedbacksQuery();
+  const [replyToFeedback] = useReplyToFeedbackMutation();
+  const { user } = useSelector((state: RootState) => state.auth);
   const feedback: Feedback[] = Array.isArray(feedbackResponse?.data) ? feedbackResponse!.data : [];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
+  const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+  const [isReplying, setIsReplying] = useState(false);
 
   const safeDate = (value: unknown) => {
     const d = new Date(String(value ?? ''));
@@ -87,9 +94,29 @@ export default function FeedBack() {
     return sorted;
   }, [feedback, searchTerm, sortOrder]);
 
-  const onView = (item: Feedback) => {
-    // TODO: open a modal or route to details page
-    console.log('View feedback', item.id);
+  const handleReply = (item: Feedback) => {
+    setSelectedFeedback(item);
+    setIsReplying(true);
+  };
+
+  const handleSendReply = async (message: string) => {
+    if (!selectedFeedback || !user) return;
+    
+    try {
+      await replyToFeedback({
+        id: selectedFeedback.id,
+        message,
+        adminName: user.fullName || 'Admin',
+        adminEmail: user.email || 'admin@karnue.com',
+      }).unwrap();
+      
+      // Refresh the feedback list
+      refetch();
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+      return Promise.reject(error);
+    }
   };
 
   const onDelete = (item: Feedback) => {
@@ -235,22 +262,30 @@ export default function FeedBack() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
-                    <button
-                      onClick={() => onView(item)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                      aria-label="View"
-                      title="View"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => onDelete(item)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                      aria-label="Delete"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex space-x-2">
+                        {item.replied ? (
+                          <span className="text-green-600" title="Replied">
+                            <CheckCircle className="h-5 w-5" />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleReply(item)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Reply to feedback"
+                          >
+                            <MessageCircle className="h-5 w-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDelete(item)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete feedback"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
                   </div>
                 </div>
               </div>
@@ -265,6 +300,19 @@ export default function FeedBack() {
           </div>
         )}
       </div>
+
+      {/* Reply Modal */}
+      {isReplying && selectedFeedback && (
+        <ReplyModal
+          feedback={selectedFeedback}
+          onClose={() => {
+            setIsReplying(false);
+            setSelectedFeedback(null);
+          }}
+          onSendReply={handleSendReply}
+          isSending={false}
+        />
+      )}
     </div>
   );
 }

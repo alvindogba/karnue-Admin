@@ -236,6 +236,13 @@ export interface GetAdminDriversResponse {
 }
 
 //######################### Define types for feedback #########################
+export interface FeedbackReply {
+  id: string;
+  message: string;
+  adminName: string;
+  createdAt: string;
+}
+
 export interface Feedback {
   id: string;
   fullName: string;
@@ -243,6 +250,9 @@ export interface Feedback {
   message: string;
   createdAt: string;
   updatedAt?: string;
+  replied: boolean;
+  reply?: FeedbackReply;
+  repliedAt?: string;
 }
 
 export interface GetFeedbacksResponse {
