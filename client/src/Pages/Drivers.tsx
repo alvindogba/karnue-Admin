@@ -1,6 +1,7 @@
 import { Car, Search, Filter, Plus, Eye, CheckCircle, XCircle, ShieldAlert, Play } from "lucide-react";
 import { useState } from 'react';
 import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
+import { useGetReservationsQuery } from '../../Store/Api/reservationsApi';
 import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
@@ -27,11 +28,40 @@ function statusBadge(status: AdminDriver['accountStatus']) {
 
 export default function Drivers() {
   const [search, setSearch] = useState('');
-  const { data, isLoading, refetch } = useGetDriversQuery({ status: 'awaiting_verification', search, limit: 50, sortBy: 'submittedAt', sortOrder: 'DESC' });
+  const [statusFilter, setStatusFilter] = useState<'all' | AdminDriver['accountStatus']>('all');
+  // Build query params based on selected status
+  const queryParams = {
+    search,
+    limit: 50,
+    sortBy: 'createdAt',
+    sortOrder: 'DESC' as const,
+    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+  };
+  const { data, isLoading, refetch } = useGetDriversQuery(queryParams);
   const drivers = (data?.data || []) as AdminDriver[];
   const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
   const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
   const [rejectDriver, { isLoading: rejecting }] = useRejectDriverMutation();
+
+  // Stats: counts derived from admin drivers endpoint
+  const { data: allDriversResp, isLoading: loadingAll } = useGetDriversQuery({ limit: 1 });
+  const { data: activeDriversResp, isLoading: loadingActiveCount } = useGetDriversQuery({ status: 'active', limit: 1 });
+  const { data: pendingDriversResp, isLoading: loadingPendingCount } = useGetDriversQuery({ status: 'awaiting_verification', limit: 1 });
+
+  const totalDrivers = allDriversResp?.pagination?.total ?? (allDriversResp?.data?.length ?? 0);
+  const activeDriversCount = activeDriversResp?.pagination?.total ?? (activeDriversResp?.data?.length ?? 0);
+  const pendingApprovals = pendingDriversResp?.pagination?.total ?? (pendingDriversResp?.data?.length ?? 0);
+
+  // Average driver rating (approx): sample recent completed reservations and average driverRating
+  const { data: completedRes, isLoading: loadingAvg } = useGetReservationsQuery({ status: 'completed', limit: 50, sortBy: 'createdAt', sortOrder: 'DESC' });
+  const avgDriverRating = (() => {
+    const list = (completedRes?.reservations as any[]) || [];
+    const ratings = list
+      .map((r) => (r?.driverRating ?? r?.rating))
+      .filter((v) => typeof v === 'number');
+    if (!ratings.length) return 0;
+    return ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length;
+  })();
 
   const handleStartCheck = async (id: number) => {
     await startBgCheck(id).unwrap();
@@ -100,6 +130,8 @@ export default function Drivers() {
           <select 
             className="rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1"
             style={{ '--tw-ring-color': ACCENT } as React.CSSProperties}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
             onFocus={(e) => {
               e.target.style.borderColor = ACCENT;
             }}
@@ -107,11 +139,11 @@ export default function Drivers() {
               e.target.style.borderColor = '#d1d5db';
             }}
           >
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Pending</option>
-            <option>Suspended</option>
-            <option>Inactive</option>
+            <option value="all">All status</option>
+            <option value="awaiting_verification">Awaiting verification</option>
+            <option value="active">Active</option>
+            <option value="rejected">Rejected</option>
+            <option value="draft">Draft</option>
           </select>
         </div>
       </div>
@@ -125,7 +157,7 @@ export default function Drivers() {
             </div>
           </div>
           <div className="px-4 py-4">
-            <p className="text-2xl font-bold">856</p>
+            <p className="text-2xl font-bold">{loadingAll ? '…' : totalDrivers}</p>
             <p className="mt-1 text-sm text-gray-600">Total Drivers</p>
           </div>
         </div>
@@ -137,7 +169,7 @@ export default function Drivers() {
             </div>
           </div>
           <div className="px-4 py-4">
-            <p className="text-2xl font-bold">743</p>
+            <p className="text-2xl font-bold">{loadingActiveCount ? '…' : activeDriversCount}</p>
             <p className="mt-1 text-sm text-gray-600">Active Drivers</p>
           </div>
         </div>
@@ -149,7 +181,7 @@ export default function Drivers() {
             </div>
           </div>
           <div className="px-4 py-4">
-            <p className="text-2xl font-bold">67</p>
+            <p className="text-2xl font-bold">{loadingPendingCount ? '…' : pendingApprovals}</p>
             <p className="mt-1 text-sm text-gray-600">Pending Approval</p>
           </div>
         </div>
@@ -161,7 +193,7 @@ export default function Drivers() {
             </div>
           </div>
           <div className="px-4 py-4">
-            <p className="text-2xl font-bold">4.6</p>
+            <p className="text-2xl font-bold">{loadingAvg ? '…' : avgDriverRating.toFixed(1)}</p>
             <p className="mt-1 text-sm text-gray-600">Avg Rating</p>
           </div>
         </div>
