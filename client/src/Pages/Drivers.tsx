@@ -53,7 +53,7 @@ export default function Drivers() {
   const pendingApprovals = pendingDriversResp?.pagination?.total ?? (pendingDriversResp?.data?.length ?? 0);
 
   // Average driver rating (approx): sample recent completed reservations and average driverRating
-  const { data: completedRes, isLoading: loadingAvg } = useGetReservationsQuery({ status: 'completed', limit: 50, sortBy: 'createdAt', sortOrder: 'DESC' });
+  const { data: completedRes, isLoading: loadingAvg } = useGetReservationsQuery({ status: 'completed', limit: 50, sortBy: 'createdAt', sortOrder: 'desc' });
   const avgDriverRating = (() => {
     const list = (completedRes?.reservations as any[]) || [];
     const ratings = list
