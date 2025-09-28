@@ -1,6 +1,13 @@
 import { Car, Search, Filter, Plus, Eye, CheckCircle, XCircle, ShieldAlert, Play } from "lucide-react";
 import { useState } from 'react';
-import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
+import { 
+  useGetDriversQuery, 
+  useStartBackgroundCheckMutation, 
+  useApproveDriverMutation, 
+  useRejectDriverMutation,
+  useGetDriverStatsQuery // Add this import
+} from '../../Store/Api/driversApi';
+
 import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
@@ -32,6 +39,7 @@ export default function Drivers() {
   const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
   const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
   const [rejectDriver, { isLoading: rejecting }] = useRejectDriverMutation();
+  const { data: stats, isLoading: isLoadingStats } = useGetDriverStatsQuery();
 
   const handleStartCheck = async (id: number) => {
     await startBgCheck(id).unwrap();
@@ -46,6 +54,32 @@ export default function Drivers() {
     await rejectDriver({ id, reason }).unwrap();
     await refetch();
   };
+
+  function StatCard({ icon, value, label, isRating = false }: { 
+    icon: React.ReactNode; 
+    value: string; 
+    label: string;
+    isRating?: boolean;
+  }) {
+    return (
+      <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
+        <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
+          <div className="rounded-md bg-white/10 p-1.5">
+            {icon}
+          </div>
+        </div>
+        <div className="px-4 py-4">
+          <p className={`text-2xl font-bold ${isRating ? 'flex items-center gap-1' : ''}`}>
+            {isRating && <span>★</span>}
+            {value}
+          </p>
+          <p className="mt-1 text-sm text-gray-600">{label}</p>
+        </div>
+      </div>
+    );
+  }
+  
+    
 
   return (
     <div className="space-y-6">
@@ -118,53 +152,27 @@ export default function Drivers() {
 
       {/* Driver Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
-          <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
-            <div className="rounded-md bg-white/10 p-1.5">
-              <Car className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="px-4 py-4">
-            <p className="text-2xl font-bold">856</p>
-            <p className="mt-1 text-sm text-gray-600">Total Drivers</p>
-          </div>
-        </div>
-        
-        <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
-          <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
-            <div className="rounded-md bg-white/10 p-1.5">
-              <CheckCircle className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="px-4 py-4">
-            <p className="text-2xl font-bold">743</p>
-            <p className="mt-1 text-sm text-gray-600">Active Drivers</p>
-          </div>
-        </div>
-        
-        <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
-          <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
-            <div className="rounded-md bg-white/10 p-1.5">
-              <XCircle className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="px-4 py-4">
-            <p className="text-2xl font-bold">67</p>
-            <p className="mt-1 text-sm text-gray-600">Pending Approval</p>
-          </div>
-        </div>
-        
-        <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
-          <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
-            <div className="rounded-md bg-white/10 p-1.5">
-              <span className="text-white text-lg">★</span>
-            </div>
-          </div>
-          <div className="px-4 py-4">
-            <p className="text-2xl font-bold">4.6</p>
-            <p className="mt-1 text-sm text-gray-600">Avg Rating</p>
-          </div>
-        </div>
+        <StatCard 
+          icon={<Car className="h-5 w-5" />}
+          value={isLoadingStats ? "..." : stats?.totalDrivers || "0"}
+          label="Total Drivers"
+        />
+        <StatCard 
+          icon={<CheckCircle className="h-5 w-5" />}
+          value={isLoadingStats ? "..." : stats?.activeDrivers || "0"}
+          label="Active Drivers"
+        />
+        <StatCard 
+          icon={<ShieldAlert className="h-5 w-5" />}
+          value={isLoadingStats ? "..." : stats?.pendingApproval || "0"}
+          label="Pending Approval"
+        />
+        <StatCard 
+          icon={<span className="text-yellow-400">★</span>}
+          value={isLoadingStats ? "..." : stats?.avgRating || "0.0"}
+          label="Avg Rating"
+          isRating
+        />
       </div>
 
       {/* Drivers Table */}
@@ -287,5 +295,6 @@ export default function Drivers() {
         </div>
       </div>
     </div>
-  );
+  )
 }
+

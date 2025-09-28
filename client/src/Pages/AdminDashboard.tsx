@@ -9,14 +9,16 @@ import {
   Play,
   CheckCircle,
   XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Link } from 'react-router-dom';
 import { useGetDriversQuery, useStartBackgroundCheckMutation, useApproveDriverMutation, useRejectDriverMutation } from '../../Store/Api/driversApi';
+import { useGetDashboardStatsQuery } from '../../Store/Api/dashboardApi';
 import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
 function classNames(...c: (string | false | undefined)[]) {
-  return c.filter(Boolean).join(" ");
+  return c.filter(Boolean).join(" ")
 }
 
 /** Accent */
@@ -24,18 +26,21 @@ const ACCENT = "#0505CE";
 
 
 /** Stat cards (partly dynamic) */
+
 function useDashboardStats() {
+  // Get data from your API endpoints
+  const { data: statsData } = useGetDashboardStatsQuery ();
   const { data: pendingDriversResp } = useGetDriversQuery({ status: 'awaiting_verification', limit: 1 });
   const pendingDrivers = pendingDriversResp?.pagination?.total ?? pendingDriversResp?.data?.length ?? 0;
   return [
-    { icon: <Car className="h-5 w-5" />, label: "Total Bookings Today", value: "1,867" },
-    { icon: <BadgeCheck className="h-5 w-5" />, label: "Active Rides", value: "89" },
-    { icon: <ShieldAlert className="h-5 w-5" />, label: "Pending Driver Registrations", value: String(pendingDrivers) },
-    { icon: <CreditCard className="h-5 w-5" />, label: "Total Revenue", value: "$1,867" },
-    { icon: <ShieldCheck className="h-5 w-5" />, label: "Driver Payouts", value: "$9,867" },
-    { icon: <Users className="h-5 w-5" />, label: "Active Drivers Today", value: "50/100" },
-    { icon: <Users className="h-5 w-5" />, label: "Total Bookings Today", value: "234" },
-    { icon: <Car className="h-5 w-5" />, label: "Issue Raised", value: "23" },
+    { icon: <Car className="h-5 w-5" />, label: "Total Bookings", value: statsData?.totalBookings?.toLocaleString() || "0" },
+    { icon: <BadgeCheck className="h-5 w-5" />, label: "Active Rides", value: statsData?.activeRides?.toLocaleString() || "0" },
+    { icon: <ShieldAlert className="h-5 w-5" />, label: "Pending Drivers", value: statsData?.pendingDrivers?.toLocaleString() || "0" },
+    { icon: <CreditCard className="h-5 w-5" />, label: "Total Revenue", value: `$${statsData?.totalRevenue?.toLocaleString() || "0"}` },
+    { icon: <ShieldCheck className="h-5 w-5" />, label: "Driver Payouts", value: `$${statsData?.driverPayouts?.toLocaleString() || "0"}` },
+    { icon: <Users className="h-5 w-5" />, label: "Active Drivers", value: statsData?.activeDrivers ? `${statsData.activeDrivers.active}/${statsData.activeDrivers.total}` : "0/0" },
+    { icon: <Users className="h-5 w-5" />, label: "Total Bookings Today", value: statsData?.todayBookings?.toLocaleString() || "0" },
+    { icon: <AlertCircle className="h-5 w-5" />, label: "Issues Raised", value: statsData?.issuesRaised?.toLocaleString() || "0" }
   ];
 }
 

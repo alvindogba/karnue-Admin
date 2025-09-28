@@ -1,12 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-import type { GetAdminDriversRequest, GetAdminDriversResponse } from '../interface';
+import type { GetAdminDriversRequest, GetAdminDriversResponse, DriverStats } from '../interface';
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
 export const driversApi = createApi({
   reducerPath: 'driversApi',
-  tagTypes: ['Drivers'],
+  tagTypes: ['Drivers', 'DriverStats'],
   baseQuery: fetchBaseQuery({
     baseUrl: `${baseUrl}/api/admin`,
     prepareHeaders: (headers, { getState }) => {
@@ -35,6 +35,22 @@ export const driversApi = createApi({
       query: ({ id, reason }) => ({ url: `/drivers/${id}/reject`, method: 'PATCH', body: { reason } }),
       invalidatesTags: ['Drivers'],
     }),
+    getDriverStats: builder.query<DriverStats, void>({
+      query: () => ({
+        url: '/driver_stats',
+        method: 'GET',
+      }),
+      providesTags: ['DriverStats'],
+      // Add error logging
+      async onQueryStarted(_args, { queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          console.log('Driver stats fetched successfully:', result);
+        } catch (error) {
+          console.error('Error fetching driver stats:', error);
+        }
+      },
+    }),
   }),
 });
 
@@ -43,5 +59,6 @@ export const {
   useStartBackgroundCheckMutation,
   useApproveDriverMutation,
   useRejectDriverMutation,
+  useGetDriverStatsQuery,
 } = driversApi;
 

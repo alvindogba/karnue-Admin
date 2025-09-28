@@ -14,6 +14,7 @@ import { ridersApi } from './Api/ridersApi';
 import { reservationsApi } from './Api/reservationsApi';
 import { driversApi } from './Api/driversApi';
 import { feedBackApi } from './Api/feedBackApi';
+import { dashboardApi } from './Api/dashboardApi';
 
 // Configure persist
 import storage from 'redux-persist/lib/storage';
@@ -36,6 +37,7 @@ const rootReducer = combineReducers({
   [reservationsApi.reducerPath]: reservationsApi.reducer,
   [driversApi.reducerPath]: driversApi.reducer,
   [feedBackApi.reducerPath]: feedBackApi.reducer,
+  [dashboardApi.reducerPath]: dashboardApi.reducer,
 });
 
 // Create persisted reducer
@@ -47,7 +49,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(authApi.middleware, ridersApi.middleware, reservationsApi.middleware, driversApi.middleware, feedBackApi.middleware),
+    }).concat(authApi.middleware, ridersApi.middleware, reservationsApi.middleware, driversApi.middleware, feedBackApi.middleware, dashboardApi.middleware),
 });
 
 // Enable refetchOnFocus and other RTK Query features

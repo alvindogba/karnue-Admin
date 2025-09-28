@@ -235,6 +235,13 @@ export interface GetAdminDriversResponse {
   };
 }
 
+export interface DriverStats {
+  totalDrivers: number;
+  activeDrivers: number;
+  pendingApproval: number;
+  avgRating: string;
+}
+
 //######################### Define types for feedback #########################
 export interface FeedbackReply {
   id: string;
