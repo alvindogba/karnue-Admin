@@ -8,6 +8,7 @@ import {
   useGetDriverStatsQuery // Add this import
 } from '../../Store/Api/driversApi';
 
+//import { useGetReservationsQuery } from '../../Store/Api/reservationsApi';
 import type { AdminDriver } from '../../Store/interface';
 
 /** Utility */
@@ -34,7 +35,16 @@ function statusBadge(status: AdminDriver['accountStatus']) {
 
 export default function Drivers() {
   const [search, setSearch] = useState('');
-  const { data, isLoading, refetch } = useGetDriversQuery({ status: 'awaiting_verification', search, limit: 50, sortBy: 'submittedAt', sortOrder: 'DESC' });
+  const [statusFilter, setStatusFilter] = useState<'all' | AdminDriver['accountStatus']>('all');
+  // Build query params based on selected status
+  const queryParams = {
+    search,
+    limit: 50,
+    sortBy: 'createdAt',
+    sortOrder: 'DESC' as const,
+    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+  };
+  const { data, isLoading, refetch } = useGetDriversQuery(queryParams);
   const drivers = (data?.data || []) as AdminDriver[];
   const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
   const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
@@ -55,12 +65,20 @@ export default function Drivers() {
     await refetch();
   };
 
-  function StatCard({ icon, value, label, isRating = false }: { 
+  function StatCard({ 
+    icon, 
+    value, 
+    label, 
+    isRating = false 
+  }: { 
     icon: React.ReactNode; 
-    value: string; 
+    value: string | number;  // Allow both string and number
     label: string;
     isRating?: boolean;
   }) {
+    // Convert value to string for display
+    const displayValue = value.toString();
+    
     return (
       <div className="rounded-md border border-gray-200 bg-white p-0 shadow-sm">
         <div className="flex items-center gap-2 rounded-t-md bg-black px-4 py-3 text-white">
@@ -71,7 +89,7 @@ export default function Drivers() {
         <div className="px-4 py-4">
           <p className={`text-2xl font-bold ${isRating ? 'flex items-center gap-1' : ''}`}>
             {isRating && <span>★</span>}
-            {value}
+            {displayValue}
           </p>
           <p className="mt-1 text-sm text-gray-600">{label}</p>
         </div>
@@ -134,6 +152,8 @@ export default function Drivers() {
           <select 
             className="rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1"
             style={{ '--tw-ring-color': ACCENT } as React.CSSProperties}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
             onFocus={(e) => {
               e.target.style.borderColor = ACCENT;
             }}
@@ -141,11 +161,11 @@ export default function Drivers() {
               e.target.style.borderColor = '#d1d5db';
             }}
           >
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Pending</option>
-            <option>Suspended</option>
-            <option>Inactive</option>
+            <option value="all">All status</option>
+            <option value="awaiting_verification">Awaiting verification</option>
+            <option value="active">Active</option>
+            <option value="rejected">Rejected</option>
+            <option value="draft">Draft</option>
           </select>
         </div>
       </div>
