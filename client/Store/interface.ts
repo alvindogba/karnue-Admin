@@ -204,8 +204,13 @@ export interface AdminDriver {
   vehicleMake?: string;
   vehicleModel?: string;
   vehicleYear?: string;
+  vehicleColor?: string;
   licensePlate?: string;
   payoutMethod?: string;
+  driversLicenseFront?: string;
+  driversLicenseBack?: string;
+  vehicleRegistration?: string;
+  proofOfInsurance?: string;
   accountStatus: 'draft' | 'awaiting_verification' | 'active' | 'rejected';
   backgroundCheckStatus: 'not_started' | 'in_progress' | 'clear' | 'flagged' | 'failed';
   submittedAt?: string;
