@@ -44,8 +44,13 @@ export default function Drivers() {
     sortOrder: 'DESC' as const,
     ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
   };
-  const { data, isLoading, refetch } = useGetDriversQuery(queryParams);
+  const { data, isLoading, error, refetch } = useGetDriversQuery(queryParams);
   const drivers = (data?.data || []) as AdminDriver[];
+  
+  // Log for debugging
+  console.log('Query params:', queryParams);
+  console.log('API Response:', { data, isLoading, error });
+  console.log('Drivers array:', drivers);
   const [startBgCheck, { isLoading: starting }] = useStartBackgroundCheckMutation();
   const [approveDriver, { isLoading: approving }] = useApproveDriverMutation();
   const [rejectDriver, { isLoading: rejecting }] = useRejectDriverMutation();
@@ -148,7 +153,7 @@ export default function Drivers() {
                       <dl className="space-y-2">
                         <div className="bg-gray-50 px-4 py-3 rounded-md">
                           <dt className="text-sm font-medium text-gray-500">Full Name</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{driver.fullName || 'N/A'}</dd>
+                          <dd className="mt-1 text-sm text-gray-900">{driver.firstName || 'N/A'}</dd>
                         </div>
                         <div className="bg-gray-50 px-4 py-3 rounded-md">
                           <dt className="text-sm font-medium text-gray-500">Email</dt>
@@ -389,6 +394,11 @@ export default function Drivers() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr><td className="px-6 py-4" colSpan={6}>Loading…</td></tr>
+              ) : error ? (
+                <tr><td className="px-6 py-4 text-red-600" colSpan={6}>
+                  Error loading drivers: {JSON.stringify(error)}
+                  <button onClick={() => refetch()} className="ml-4 text-blue-600 underline">Retry</button>
+                </td></tr>
               ) : drivers.length === 0 ? (
                 <tr><td className="px-6 py-4" colSpan={6}>No registrations found</td></tr>
               ) : drivers.map((driver) => (
@@ -397,11 +407,11 @@ export default function Drivers() {
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
                         <span className="text-sm font-medium text-gray-600">
-                          {(driver.fullName || 'N A').split(' ').map(n => n[0]).join('')}
+                          {(driver.firstName || 'N A').split(' ').map(n => n[0]).join('')}
                         </span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{driver.fullName}</div>
+                        <div className="text-sm font-medium text-gray-900">{driver.firstName}</div>
                         <div className="text-xs text-gray-500">Submitted: {driver.submittedAt ? new Date(driver.submittedAt).toLocaleString() : '-'}</div>
                       </div>
                     </div>

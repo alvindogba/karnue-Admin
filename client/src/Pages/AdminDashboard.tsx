@@ -29,9 +29,7 @@ const ACCENT = "#0505CE";
 
 function useDashboardStats() {
   // Get data from your API endpoints
-  const { data: statsData } = useGetDashboardStatsQuery ();
-  const { data: pendingDriversResp } = useGetDriversQuery({ status: 'awaiting_verification', limit: 1 });
-  const pendingDrivers = pendingDriversResp?.pagination?.total ?? pendingDriversResp?.data?.length ?? 0;
+  const { data: statsData } = useGetDashboardStatsQuery(undefined);
   return [
     { icon: <Car className="h-5 w-5" />, label: "Total Bookings", value: statsData?.totalBookings?.toLocaleString() || "0" },
     { icon: <BadgeCheck className="h-5 w-5" />, label: "Active Rides", value: statsData?.activeRides?.toLocaleString() || "0" },
@@ -174,7 +172,7 @@ export default function AdminDashboard() {
               ) : pendingDrivers.map((d) => (
                 <tr key={d.id} className="hover:bg-gray-50">
                   <td className="px-6 py-3">
-                    <div className="text-sm font-medium text-gray-900">{d.fullName}</div>
+                    <div className="text-sm font-medium text-gray-900">{d.firstName}</div>
                     <div className="text-xs text-gray-500">ID: {d.id}</div>
                   </td>
                   <td className="px-6 py-3">

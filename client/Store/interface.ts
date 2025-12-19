@@ -198,7 +198,8 @@ export interface Driver {
 // Admin Driver object from server
 export interface AdminDriver {
   id: number;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   vehicleMake?: string;

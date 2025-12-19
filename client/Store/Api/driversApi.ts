@@ -17,11 +17,23 @@ export const driversApi = createApi({
   }),
   endpoints: (builder) => ({
     getDrivers: builder.query<GetAdminDriversResponse, GetAdminDriversRequest | void>({
-      query: (params) => ({
-        url: '/drivers',
-        params: params || undefined,
-      }),
+      query: (params) => {
+        console.log('getDrivers API called with params:', params);
+        console.log('Base URL:', `${baseUrl}/api/admin`);
+        return {
+          url: '/drivers',
+          params: params || undefined,
+        };
+      },
       providesTags: ['Drivers'],
+      async onQueryStarted(_args, { queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          console.log('Drivers fetched successfully:', result);
+        } catch (error) {
+          console.error('Error fetching drivers:', error);
+        }
+      },
     }),
     startBackgroundCheck: builder.mutation<{ success: boolean; reference: string; status: string }, number>({
       query: (id) => ({ url: `/drivers/${id}/background-check/start`, method: 'POST' }),
